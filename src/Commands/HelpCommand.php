@@ -27,70 +27,40 @@ class HelpCommand extends BaseCommand implements TelegramCommandInterface
 
     public function handle(UpdateInterface $update)
     {
-        $this->sendPhoto(
-            [
-//                'photo' => 'https://yandex.ru/collections/card/5e496d8cd497a8e0096a0dc2/',
-                'photo' => '/var/www/html/assets/example.jpg',
-                'caption' => 'Test caption',
-                'reply_markup' => json_encode(
-                    [
-                        'inline_keyboard' => [
-                            [
-                                [
-                                    'text' => 'Button 1',
-                                    'callback_data' => '/start'
-                                ],
-                                [
-                                    'text' => 'Button 2',
-                                    'callback_data' => '/start'
-                                ],
-                            ],
-                            [
-                                [
-                                    'text' => 'Button 3',
-                                    'callback_data' => '/start'
-                                ],
-                            ],
-                        ],
-                    ]
-                ),
-            ]
-        );
+       $text = join(PHP_EOL, array_map(function ($command) {
+           /**
+            * @var TelegramCommandInterface $command
+            */
+           return sprintf('/%s - %s', $command->getName(), $command->getDescription());
+       }, array_filter($this->commandsManager->getCommands(), function ($command) {
+           return $command instanceof TelegramCommandInterface;
+       })));
 
-//        $text = join(PHP_EOL, array_map(function ($command) {
-//            /**
-//             * @var TelegramCommandInterface $command
-//             */
-//            return sprintf('/%s - %s', $command->getName(), $command->getDescription());
-//        }, array_filter($this->commandsManager->getCommands(), function ($command) {
-//            return $command instanceof TelegramCommandInterface;
-//        })));
-//
-//        $this->sendMessage(
-//            [
-//                'text' => $text,
-//                'reply_markup' => json_encode([
-//                    'inline_keyboard' => [
-//                        [
-//                            [
-//                                'text' => 'Button 1',
-//                                'callback_data' => '/start'
-//                            ],
-//                            [
-//                                'text' => 'Button 2',
-//                                'callback_data' => '/start'
-//                            ],
-//                        ],
-//                        [
-//                            [
-//                                'text' => 'Button 3',
-//                                'callback_data' => '/start'
-//                            ],
-//                        ],
-//                    ],
-//                ]),
-//            ]
-//        );
+       $this->sendMessage(
+           [
+               'text' => $text,
+               'reply_markup' => json_encode([
+                   'inline_keyboard' => [
+                       [
+                           [
+                               'text' => 'Button 1',
+                               'callback_data' => '/start'
+                           ],
+                           [
+                               'text' => 'Button 2',
+                               'callback_data' => '/start'
+                           ],
+                       ],
+                       [
+                           [
+                               'text' => 'Button 3',
+                               'callback_data' => '/start'
+                           ],
+                       ],
+                   ],
+               ]),
+           ]
+       );
     }
 
 }
