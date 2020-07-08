@@ -1,0 +1,19 @@
+{
+    "name": "digitfab/telegrambot",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Epifanov E",
+            "email": "workeev@gmail.com"
+        }
+    ],
+    "require": {
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "DigitFab\\TelegramBot\\" : "src"
+        }
+    }
+}
