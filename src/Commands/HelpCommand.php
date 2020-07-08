@@ -27,6 +27,7 @@ class HelpCommand extends BaseCommand implements TelegramCommandInterface
 
     public function handle(UpdateInterface $update)
     {
+
        $text = join(PHP_EOL, array_map(function ($command) {
            /**
             * @var TelegramCommandInterface $command
@@ -39,26 +40,6 @@ class HelpCommand extends BaseCommand implements TelegramCommandInterface
        $this->sendMessage(
            [
                'text' => $text,
-               'reply_markup' => json_encode([
-                   'inline_keyboard' => [
-                       [
-                           [
-                               'text' => 'Button 1',
-                               'callback_data' => '/start'
-                           ],
-                           [
-                               'text' => 'Button 2',
-                               'callback_data' => '/start'
-                           ],
-                       ],
-                       [
-                           [
-                               'text' => 'Button 3',
-                               'callback_data' => '/start'
-                           ],
-                       ],
-                   ],
-               ]),
            ]
        );
     }
