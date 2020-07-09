@@ -1,6 +1,7 @@
 {
     "name": "digitfab/telegrambot",
     "type": "library",
+    "description": "Telegram bot library",
     "authors": [
         {
             "name": "Epifanov E",
@@ -8,6 +9,7 @@
         }
     ],
     "require": {
+        "php": "^7.2.5",
         "ext-json": "*",
         "guzzlehttp/guzzle": "7.0"
     },

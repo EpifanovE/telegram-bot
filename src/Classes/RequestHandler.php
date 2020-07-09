@@ -51,7 +51,7 @@ class RequestHandler implements RequestHandlerInterface
             $this->sendFile($fileType, $arguments[0]);
         } else {
             $args = ! empty($arguments) && ! empty($arguments[0]) ? $arguments[0] : [];
-            $this->httpClient->post($this->getBaseUrl($methodName), $args);
+            $this->httpClient->sendMultipart($this->getBaseUrl($methodName), $args);
         }
     }
 
@@ -70,7 +70,7 @@ class RequestHandler implements RequestHandlerInterface
         }
 
         if (is_string($params['media']['media']) && filter_var($params['media']['media'], FILTER_VALIDATE_URL)) {
-            $this->httpClient->post($this->getBaseUrl('editMessageMedia'), $params);
+            $this->httpClient->sendMultipart($this->getBaseUrl('editMessageMedia'), $params);
         }
     }
 
@@ -119,7 +119,7 @@ class RequestHandler implements RequestHandlerInterface
         }
 
         if (is_string($params[$type]) && filter_var($params[$type], FILTER_VALIDATE_URL)) {
-            $this->httpClient->post($this->getSendFileUrl($type), $params);
+            $this->httpClient->sendMultipart($this->getSendFileUrl($type), $params);
         }
     }
 
