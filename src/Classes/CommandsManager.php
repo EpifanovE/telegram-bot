@@ -71,6 +71,10 @@ class CommandsManager
         $this->rules = $rules;
     }
 
+    public function addRule($rule) {
+        $this->rules[] = $rule;
+    }
+
     private function checkCommandObject($object)
     {
         return is_object($object) && $object instanceof CommandInterface;
