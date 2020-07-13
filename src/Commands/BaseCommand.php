@@ -22,6 +22,10 @@ use DigitFab\TelegramBot\Exceptions\TelegramBotException;
  * @method mixed editMessageReplyMarkup($params)
  * @method mixed stopPoll($params = [])
  * @method mixed deleteMessage($params = [])
+ * @method mixed getFile($params = [])
+ *
+ * @method mixed saveFileByFileInfo($params = [])
+ * @method mixed saveFileByUpdate(UpdateInterface $update)
  *
  * @package DigitFab\Commands
  */
@@ -34,6 +38,8 @@ abstract class BaseCommand implements CommandInterface
 
     protected $requestHandler;
 
+    protected $attributes = [];
+
     public function setUpdate(UpdateInterface $update)
     {
         $this->update = $update;
@@ -44,10 +50,12 @@ abstract class BaseCommand implements CommandInterface
         $this->requestHandler = $requestHandler;
     }
 
+    public function setAttributes(array $attributes = []) {
+        $this->attributes = $attributes;
+    }
+
     public function __call($methodName, $arguments)
     {
-        file_put_contents('/var/www/html/dump.json', json_encode($arguments));
-
         if (empty($this->update)) {
             throw new TelegramBotException('Update is empty in the Command class');
         }
@@ -56,21 +64,26 @@ abstract class BaseCommand implements CommandInterface
             throw new TelegramBotException('Request handler is empty in the Command class');
         }
 
-        $args = !empty($arguments) && !empty($arguments[0]) ? $arguments[0] : [];
+        $params = ! empty($arguments) && ! empty($arguments[0]) ? $arguments[0] : [];
 
         if ($this->isSendAction($methodName)) {
             $chatId = $this->update->getChatId();
-            $params = array_merge(['chat_id' => $chatId], $args);
+            $params = array_merge(
+                $params,
+                [
+                    'chat_id' => $chatId
+                ]
+            );
         }
 
         if ($this->isEditAction($methodName)) {
             $chatId = $this->update->getChatId();
             $params = array_merge(
+                $params,
                 [
                     'chat_id' => $chatId,
                     'message_id' => $this->update->getMessage()['message_id']
-                ],
-                $args
+                ]
             );
         }
 

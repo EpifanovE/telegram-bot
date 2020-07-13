@@ -14,7 +14,7 @@ class CallbackQuery extends UpdateType
         return $this->data['callback_query']['message'];
     }
 
-    public function doGetContent()
+    public function doGetRuleText()
     {
         return $this->data['callback_query']['data'];
     }

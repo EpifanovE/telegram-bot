@@ -9,9 +9,6 @@ use DigitFab\TelegramBot\Contracts\UpdateInterface;
 
 class Update implements UpdateInterface
 {
-    const TYPE_CALLBACK_QUERY = 'callback_query';
-    const TYPE_TEXT = 'text';
-
     private $data;
 
     /**
@@ -30,11 +27,7 @@ class Update implements UpdateInterface
     {
         $this->data = $data;
 
-        if ( ! empty($data['callback_query'])) {
-            $this->type = new CallbackQuery(self::TYPE_CALLBACK_QUERY, $data);
-        } else {
-            $this->type = new Message(self::TYPE_TEXT, $data);
-        }
+        $this->type = UpdateType::make($this);
     }
 
     public function getData()
@@ -62,8 +55,8 @@ class Update implements UpdateInterface
         return $this->type->getMessage();
     }
 
-    public function getContent()
+    public function getRuleText()
     {
-        return $this->type->getContent();
+        return $this->type->getRuleText();
     }
 }

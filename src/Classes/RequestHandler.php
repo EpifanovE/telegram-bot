@@ -4,13 +4,19 @@ namespace DigitFab\TelegramBot\Classes;
 
 use DigitFab\TelegramBot\Contracts\HttpClientInterface;
 use DigitFab\TelegramBot\Contracts\RequestHandlerInterface;
+use DigitFab\TelegramBot\Contracts\UpdateInterface;
 use DigitFab\TelegramBot\Exceptions\TelegramBotException;
 
+/**
+ * Class RequestHandler
+ *
+ * @method mixed setWebhook($params)
+ */
 class RequestHandler implements RequestHandlerInterface
 {
     private $httpClient;
 
-    private $token;
+    private $config;
 
     private $availableMethods = [
         'sendMessage',
@@ -25,6 +31,9 @@ class RequestHandler implements RequestHandlerInterface
         'editMessageReplyMarkup',
         'stopPoll',
         'deleteMessage',
+        'getFile',
+        'setWebhook',
+        'deleteWebhook',
     ];
 
     private $sendFileMethods = [
@@ -34,10 +43,21 @@ class RequestHandler implements RequestHandlerInterface
         'sendVideo',
     ];
 
-    public function __construct(HttpClientInterface $httpClient, $token)
+    private $fileTypes = [
+        'photo',
+        'audio',
+        'document',
+        'video',
+        'animation',
+        'video_note',
+        'voice',
+        'sticker',
+    ];
+
+    public function __construct(HttpClientInterface $httpClient, $config)
     {
         $this->httpClient = $httpClient;
-        $this->token      = $token;
+        $this->config     = $config;
     }
 
     public function __call($methodName, $arguments)
@@ -48,29 +68,35 @@ class RequestHandler implements RequestHandlerInterface
 
         if (in_array($methodName, $this->sendFileMethods)) {
             $fileType = lcfirst(str_replace('send', '', $methodName));
-            $this->sendFile($fileType, $arguments[0]);
+
+            return $this->sendFile($fileType, $arguments[0]);
         } else {
-            $args = ! empty($arguments) && ! empty($arguments[0]) ? $arguments[0] : [];
-            $this->httpClient->sendMultipart($this->getBaseUrl($methodName), $args);
+            $args   = ! empty($arguments) && ! empty($arguments[0]) ? $arguments[0] : [];
+            $result = $this->httpClient->post($this->getBaseUrl($methodName), $args);
+
+            return json_decode($result->getBody(), true)['result'];
         }
+    }
+
+    public function deleteWebhook() {
+        return $this->httpClient->get($this->getBaseUrl('deleteWebhook'));
     }
 
     public function editMessageMedia($params)
     {
         if (is_file($params['media']['media'])) {
-
             $fileName = uniqid('file-');
 
-            $sendParams  = $params;
-            $sendParams[$fileName] = fopen($params['media']['media'], 'r');
+            $sendParams                   = $params;
+            $sendParams[$fileName]        = fopen($params['media']['media'], 'r');
             $sendParams['media']['media'] = 'attach://' . $fileName;
-            $sendParams['media'] = json_encode($sendParams['media']);
+            $sendParams['media']          = json_encode($sendParams['media']);
 
-            $this->httpClient->sendMultipart($this->getBaseUrl('editMessageMedia'), $sendParams);
+            $this->httpClient->post($this->getBaseUrl('editMessageMedia'), $sendParams);
         }
 
         if (is_string($params['media']['media']) && filter_var($params['media']['media'], FILTER_VALIDATE_URL)) {
-            $this->httpClient->sendMultipart($this->getBaseUrl('editMessageMedia'), $params);
+            $this->httpClient->post($this->getBaseUrl('editMessageMedia'), $params);
         }
     }
 
@@ -104,7 +130,61 @@ class RequestHandler implements RequestHandlerInterface
 
         $parameters['media'] = json_encode($media);
 
-        $this->httpClient->sendMultipart($this->getSendFileUrl('mediaGroup'), $parameters);
+        $this->httpClient->post($this->getSendFileUrl('mediaGroup'), $parameters);
+    }
+
+    public function saveFileByFileInfo($fileInfo)
+    {
+        if (empty($fileInfo['file_path'])) {
+            throw new TelegramBotException('file_path is empty');
+        }
+
+        $ext = pathinfo($fileInfo['file_path'])['extension'];
+
+        if ( ! is_dir($this->config['uploadsDir'])) {
+            $isCreated = mkdir($this->config['uploadsDir'], $this->config['uploadsDirPermissions'] ?? 0775, true);
+
+            if ( ! $isCreated) {
+                throw new TelegramBotException('Uploads directory has not been created.');
+            }
+        }
+
+        $fileName = realpath(rtrim($this->config['uploadsDir'], '/')) . '/' . $fileInfo['file_id'] . '.' . $ext;
+        $url      = 'https://api.telegram.org/file/bot' . $this->config['token'] . '/' . ltrim(
+                $fileInfo['file_path'],
+                '/'
+            );
+
+        $this->httpClient->download($url, $fileName);
+
+        return $fileName;
+    }
+
+    public function saveFileByUpdate(UpdateInterface $update)
+    {
+        $fileType = $this->getFileType($update);
+
+        if (empty($fileType)) {
+            throw new TelegramBotException('File type field not found in the update object.');
+        }
+
+        if ($fileType === 'photo') {
+            $photoInfo = $update->getMessage()[$fileType][count($update->getMessage()[$fileType]) - 1];
+            $fileId    = $photoInfo['file_id'];
+        } else {
+            $fileId = $update->getMessage()[$fileType]['file_id'];
+        }
+
+        $result = $this->httpClient->post(
+            $this->getBaseUrl('getFile'),
+            [
+                'file_id' => $fileId,
+            ]
+        );
+
+        $fileInfo = json_decode($result->getBody(), true)['result'];
+
+        return $this->saveFileByFileInfo($fileInfo);
     }
 
     protected function isMethodExists($methodName)
@@ -115,11 +195,11 @@ class RequestHandler implements RequestHandlerInterface
     protected function sendFile($type, $params)
     {
         if (is_file($params[$type])) {
-            $this->sendFileFromDisk($type, $params);
+            return $this->sendFileFromDisk($type, $params);
         }
 
         if (is_string($params[$type]) && filter_var($params[$type], FILTER_VALIDATE_URL)) {
-            $this->httpClient->sendMultipart($this->getSendFileUrl($type), $params);
+            return $this->httpClient->post($this->getSendFileUrl($type), $params);
         }
     }
 
@@ -128,16 +208,27 @@ class RequestHandler implements RequestHandlerInterface
         $fileContents  = fopen($params[$type], 'r');
         $params[$type] = $fileContents;
 
-        $this->httpClient->sendMultipart($this->getSendFileUrl($type), $params);
+        return $this->httpClient->post($this->getSendFileUrl($type), $params);
     }
 
     protected function getBaseUrl($methodName = '')
     {
-        return 'https://api.telegram.org/bot' . $this->token . '/' . $methodName;
+        return 'https://api.telegram.org/bot' . $this->config['token'] . '/' . $methodName;
     }
 
     protected function getSendFileUrl($type)
     {
         return $this->getBaseUrl('send' . ucfirst($type));
+    }
+
+    private function getFileType(UpdateInterface $update)
+    {
+        $intersect = array_values(array_intersect($this->fileTypes, array_keys($update->getMessage())));
+
+        if (count($intersect) > 0) {
+            return $intersect[0];
+        }
+
+        return null;
     }
 }

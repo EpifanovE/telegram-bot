@@ -8,7 +8,7 @@ interface UpdateInterface
 
     public function getMessage();
 
-    public function getContent();
+    public function getRuleText();
 
     public function getChatId();
 

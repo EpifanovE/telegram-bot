@@ -5,6 +5,7 @@ namespace DigitFab\TelegramBot\Classes;
 use DigitFab\TelegramBot\Contracts\HttpClientInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\ResponseInterface;
 
 class GuzzleHttpClient implements HttpClientInterface
 {
@@ -18,29 +19,27 @@ class GuzzleHttpClient implements HttpClientInterface
         $this->client = new Client();
     }
 
-    public function post($url, $params = [])
+    public function post($url, $params = []): ResponseInterface
     {
         return $this->client->post(
             $url,
             [
-                RequestOptions::HEADERS => [
-                    'Content-Type' => 'application/json',
-                ],
-                RequestOptions::JSON => $params
+                RequestOptions::MULTIPART => ! empty($params) ? $this->multipartParamsPrepare($params) : [],
             ]
         );
     }
 
-    public function sendMultipart($url, $params) {
-        return $this->client->post(
-            $url,
-            [
-                RequestOptions::MULTIPART => $this->multipartParamsMap($params),
-            ]
-        );
+    public function get($url, $params = []): ResponseInterface
+    {
+        return $this->client->get($url, ['query' => $params]);
     }
 
-    private function multipartParamsMap($params)
+    public function download($url, $to): ResponseInterface
+    {
+        return $this->client->request('GET', $url, ['sink' => $to]);
+    }
+
+    private function multipartParamsPrepare($params)
     {
         return array_map(
             function ($key, $value) {

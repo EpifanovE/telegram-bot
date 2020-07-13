@@ -27,21 +27,29 @@ class HelpCommand extends BaseCommand implements TelegramCommandInterface
 
     public function handle(UpdateInterface $update)
     {
+        $text = join(
+            PHP_EOL,
+            array_map(
+                function ($command) {
+                    /**
+                     * @var TelegramCommandInterface $command
+                     */
+                    return sprintf('/%s - %s', $command->getName(), $command->getDescription());
+                },
+                array_filter(
+                    $this->commandsManager->getCommands(),
+                    function ($command) {
+                        return $command instanceof TelegramCommandInterface;
+                    }
+                )
+            )
+        );
 
-       $text = join(PHP_EOL, array_map(function ($command) {
-           /**
-            * @var TelegramCommandInterface $command
-            */
-           return sprintf('/%s - %s', $command->getName(), $command->getDescription());
-       }, array_filter($this->commandsManager->getCommands(), function ($command) {
-           return $command instanceof TelegramCommandInterface;
-       })));
-
-       $this->sendMessage(
-           [
-               'text' => $text,
-           ]
-       );
+        $this->sendMessage(
+            [
+                'text' => $text,
+            ]
+        );
     }
 
 }

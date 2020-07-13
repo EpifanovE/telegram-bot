@@ -80,7 +80,14 @@ class CommandsManager
     {
         $command->setUpdate($this->update);
         $command->setRequestHandler($this->requestHandler);
+        $command->setAttributes($this->getAttributes());
 
         return $command;
+    }
+
+    private function getAttributes() {
+        $array = explode(' ', $this->update->getRuleText());
+        array_shift($array);
+        return $array;
     }
 }

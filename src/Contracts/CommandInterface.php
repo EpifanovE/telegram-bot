@@ -9,4 +9,6 @@ interface CommandInterface
     public function setUpdate(UpdateInterface $update);
 
     public function setRequestHandler(RequestHandlerInterface $requestHandler);
+
+    public function setAttributes(array $attributes = []);
 }

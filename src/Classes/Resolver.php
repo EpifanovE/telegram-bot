@@ -34,7 +34,6 @@ class Resolver implements ResolverInterface
             /**
              * @var CommandRule $rule
              */
-
             if ($this->isMatch($rule->getMatcher())) {
                 return $this->commandsManager->getCommandObject($rule->getCommand());
             }
@@ -55,9 +54,7 @@ class Resolver implements ResolverInterface
                 return $matcherObject->match($this->update);
             }
 
-            if ( ! empty($this->update->getContent()) && (substr($matcher, 0, 1) === '/')) {
-                return $this->update->getContent() === $matcher;
-            }
+            return (boolean)preg_match("/$matcher/", $this->update->getRuleText());
         }
 
         if (is_object($matcher)) {

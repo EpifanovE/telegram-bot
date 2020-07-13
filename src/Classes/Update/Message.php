@@ -14,7 +14,7 @@ class Message extends UpdateType
         return $this->data['message'];
     }
 
-    public function doGetContent()
+    public function doGetRuleText()
     {
         return $this->data['message']['text'];
     }
